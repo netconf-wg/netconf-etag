@@ -1,0 +1,44 @@
+module ietf-netconf-txid-yang-push {
+  yang-version 1.1;
+  namespace 
+    'urn:ietf:params:xml:ns:yang:ietf-netconf-txid-yp';
+  prefix ietf-netconf-txid-yp;
+
+  import ietf-subscribed-notifications {
+    prefix sn;
+    reference
+      "RFC 8639: Subscription to YANG Notifications";
+  }
+
+  import ietf-netconf-txid {
+    prefix ietf-netconf-txid;
+    reference
+      "RFC XXXX: Xxxxxxxxx";
+  }
+
+  revision 2022-04-01 {
+    description
+      "Initial revision";
+    reference
+      "RFC XXXX: Xxxxxxxxx";
+  }
+
+  augment "/sn:establish-subscription/sn:input" {
+    description
+      "This augmentation adds additional subscription parameters
+        that apply specifically to datastore updates to RPC input.";
+    uses ietf-netconf-txid:txid-grouping;
+  }
+  augment "/sn:modify-subscription/sn:input" {
+    description
+      "This augmentation adds additional subscription parameters
+        specific to datastore updates.";
+    uses ietf-netconf-txid:txid-grouping;
+  }
+  augment "/sn:subscriptions/sn:subscription" {
+    description
+      "This augmentation adds additional subscription parameters
+        specific to datastore updates.";
+    uses ietf-netconf-txid:txid-grouping;
+  }
+}
