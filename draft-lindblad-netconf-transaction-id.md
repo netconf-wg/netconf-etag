@@ -1,7 +1,7 @@
 ---
 title: "Transaction ID Mechanism for NETCONF"
 abbrev: "NCTID"
-docname: draft-lindblad-netconf-transaction-id-latest
+docname: draft-lindblad-netconf-etag-latest
 category: std
 
 ipr: trust200902
@@ -74,7 +74,8 @@ server.
 
 RESTCONF, [RFC 8040](https://tools.ietf.org/html/rfc8040), 
 defines a mechanism for detecting changes in configuration subtrees 
-based on Entity-tags (ETags) and Last-Modified txid values.  
+based on Entity-Tags (ETags) and Last-Modified txid values.  
+
 In conjunction with this, RESTCONF 
 provides a way to make configuration changes conditional on the server
 confiuguration being untouched by others.  This mechanism leverages 
@@ -83,7 +84,7 @@ confiuguration being untouched by others.  This mechanism leverages
 
 This document defines similar functionality for NETCONF, 
 [RFC 6241](https://tools.ietf.org/html/rfc6241), and ties this in
-with YANG-Push [RFC 8641](https://tools.ietf.org/html/rfc8641).
+with YANG-Push, [RFC 8641](https://tools.ietf.org/html/rfc8641).
 
 # Conventions and Definitions
 
@@ -97,7 +98,7 @@ This document uses the terminology defined in
 
 In addition, this document defines the following terms:
 
-Versioned element
+Versioned node
 : A node in the instantiated YANG data tree for which
 the server maintains a transaction id (txid) value.
 
@@ -114,8 +115,8 @@ updates as part of subscription updates is also defined.
 
 Several low level mechanisms could be defined to fulfill the 
 requirements for efficient client-server txid synchronization.  
-This document defines two such mechanisms, the ETag txid mechanism 
-and the Last-Modified txid mechanism. Additional mechanisms could 
+This document defines two such mechanisms, the etag txid mechanism 
+and the last-modified txid mechanism. Additional mechanisms could 
 be added in future.
 
 ## Use Cases
@@ -163,26 +164,38 @@ meta data for the changed data trees.
 All servers implementing a txid mechanism MUST maintain a txid meta 
 data value for each configuration datastore supported by the server.  
 Txid mechanism implementations MAY also maintain txid meta data 
-values for elements deeper in the YANG data tree.  The elements for 
+values for nodes deeper in the YANG data tree.  The nodes for 
 which the server maintains txids are collectively referred to as the 
-"versioned elements".
+"versioned nodes".
 
-The server returning txid values for the versioned elements 
+FIXME: Update text about candidate, which works differently.
+FIXME: What about the system ds?
+FIXME: Add text: Some txid mechanisms may have an internal order, 
+such as timestamps, while others may not.  In general, the only 
+operation defined on a a pair of txid values is testing them for 
+equality.
+FIXME: text about txid mismatch => server MUST return all children
+may not be true if there is a child match.
+FIXME: Examples use a monotonously increasing int for etag. That 
+is just an example of one possible way to implement etags.  The
+only defined operation is test for equality.
+
+The server returning txid values for the versioned nodes 
 MUST ensure the txid values are changed every time there has 
-been a configuration change at or below the element associated with 
-the txid value.  This means any update of a config true element will 
-result in a new txid value for all ancestor versioned elements, up 
+been a configuration change at or below the node associated with 
+the txid value.  This means any update of a config true node will 
+result in a new txid value for all ancestor versioned node, up 
 to and including the datastore root itself.
 
 This also means a server MUST update the txid value for any 
-elements that change as a result of a configuration change, regardless 
-of source, even if the changed elements are not explicitly part 
+nodes that change as a result of a configuration change, regardless 
+of source, even if the changed nodes are not explicitly part 
 of the change payload.  An example of this is dependent data under 
 YANG [RFC 7950](https://tools.ietf.org/html/rfc7950) when- or 
 choice-statements.
 
-The server MUST NOT change the txid value of a versioned element 
-unless the element itself or a child element of that element has 
+The server MUST NOT change the txid value of a versioned node 
+unless the node itself or a child node of that node has 
 been changed.  The server MUST NOT change any txid values due to 
 changes in config false data.
 
@@ -190,7 +203,7 @@ changes in config false data.
 
 When a NETCONF server receives a get-config or get-data request 
 containing requests for txid values, it MUST return txid values for 
-all versioned elements below the point requested by the client in 
+all versioned nodes below the point requested by the client in 
 the reply.
 
 The exact encoding varies by mechanism, but all txid mechanisms 
@@ -208,7 +221,7 @@ txid values below that point of the data tree.
        |     acls (txid: ?)                              |
        |                                                 |
        |   <------------------------------------------   |
-       |   data (txid: 5152)                             |
+       |   data                                          |
        |     acls (txid: 5152)                           |
        |       acl A1 (txid: 4711)                       |
        |         aces (txid: 4711)                       |
@@ -236,32 +249,32 @@ by adding one or more txid values received previously in get-config or
 get-data requests.  
 
 When a NETCONF server receives a get-config or get-data request 
-containing an element with a client specified txid value, there are 
+containing a node with a client specified txid value, there are 
 several different cases:
 
-* The element is not a versioned element, i.e. the server does not 
-maintain a txid value for this element.  In this case, the server 
-MUST look up the closest ancestor that is a versioned element, and 
-use the txid value of that element in the further handling below.  
-The datastore root is always a versioned element.
+* The node is not a versioned node, i.e. the server does not 
+maintain a txid value for this node.  In this case, the server 
+MUST look up the closest ancestor that is a versioned node, and 
+use the txid value of that node in the further handling below.  
+The datastore root is always a versioned node.
 
 * The client specified txid value is different than the server's 
-txid value for this element.  In this case the server MUST return 
+txid value for this node.  In this case the server MUST return 
 the contents as it would otherwise have done, adding the txid values 
-of all child versioned elements to the response.  In case the client 
-has specified txid values for some child elements, then these 
-cases MUST be re-evaluated for those elements.
+of all child versioned nodes to the response.  In case the client 
+has specified txid values for some child nodes, then these 
+cases MUST be re-evaluated for those nodes.
 
-* The element is a versioned element, and the client specified txid 
+* The node is a versioned mpde, and the client specified txid 
 value matches the server's txid value.  In this case the server MUST 
-return the element decorated with a special "txid-match" txid value 
-(e.g. "=") to the matching element, and child elements pruned.  The 
-txid-match value is guaranteed to never be used as a normal txid 
+return the node decorated with a special "txid-match" txid value 
+(e.g. "=") to the matching node, pruning any value and child nodes.  
+The txid-match value is guaranteed to never be used as a normal txid 
 value.
 
-For list elements, pruning child elements means that key elements 
-MUST be included in the response, and other child elements 
-MUST NOT be included.  For containers, child elements MUST NOT 
+For list elements, pruning child nodes means that key nodes 
+MUST be included in the response, and other child nodes 
+MUST NOT be included.  For containers, child nodes MUST NOT 
 be included.
 
 ~~~ call-flow
@@ -276,7 +289,8 @@ be included.
        |         aces (txid: 5152)                       |
        |                                                 |
        |   <------------------------------------------   |
-       |   data (txid: =)                                |
+       |   data                                          |
+       |     acls (txid: =)                              |
        v                                                 v
 ~~~
 {: title="Response Pruning.  Client sends get-config request with 
@@ -293,7 +307,7 @@ expectations."}
        |       acl A2 (txid: 5152)                       |
        |                                                 |
        |   <------------------------------------------   |
-       |   data (txid: 6614)                             |
+       |   data                                          |
        |     acls (txid: 6614)                           |
        |       acl A1 (txid: =)                          |
        |       acl A2 (txid: 6614)                       |
@@ -331,12 +345,13 @@ changes have happened."}
        |           ace R7                                |
        |             matches                             |
        |               ipv4                              |
-       |                 dscp AF11 (txid: =)             |
+       |                 dscp (txid: =)                  |
        v                                                 v
 ~~~
-{: title="Versioned elements.  Server lookup of dscp txid gives 
+{: title="Versioned nodes.  Server lookup of dscp txid gives 
 4711, as closest ancestor is ace R7 with txid 4711.  Since the 
-server's and client's txid match, the etag value is '='."}
+server's and client's txid match, the etag value is '=', and
+the leaf value is pruned."}
 
 ## Conditional Transactions
 
@@ -356,7 +371,7 @@ from another client disrupts the intent in the time window between a
 read (get-config etc.) and write (edit-config etc.) operation.
 
 Client that are also interested to know the txid assigned to the
-modified versioned elements in the model immediately in the
+modified versioned nodes in the model immediately in the
 response could set a flag in the rpc message to request the server
 to return the new txid with the ok message.
 
@@ -406,8 +421,7 @@ the transaction was successfully executed."}
 ~~~
 {: title="For all leaf objects that were changed, and all their 
 ancestors, the txids are updated to the value returned in the ok 
-message.  This also applies to any elements implicitly changed by
-when- and choice-statements (not shown)."}
+message."}
 
 If the server rejects the transaction because the configuration 
 txid value differs from the client's expectation, the 
@@ -452,6 +466,128 @@ part of the configuration.  Since the txid has changed
 and reports an error with details about where the mismatch was 
 detected."}
 
+## Dependencies within Transactions
+
+YANG modules that contain when-statements referencing remote 
+parts of the model will cause the txid to change even in parts of the
+data tree that were not modified directly.
+
+Let's say there is an energy-example.yang module that defines a 
+mechanism for clients to request the server to measure the amount of 
+energy that is consumed by a given access control rule.  The 
+energy-example module augments the access control module as follows:
+
+~~~ yang
+  augment /acl:acls/acl:acl {
+    when /energy-example:energy/energy-example:metering-enabled;
+    leaf energy-tracing {
+      type boolean;
+      default false;
+    }
+    leaf energy-consumption {
+      config false;
+      type uint64;
+      units J;
+    }
+  }
+~~~
+
+This means there is a system wide switch leaf metering-enabled in 
+energy-example which disables all energy measurements in the system when 
+set to false, and that there is a boolean leaf energy-tracing that 
+controls whether energy measurement is happening for each acl rule
+individually.
+
+In this example, we have an initial configuration like this:
+
+~~~ call-flow
+     Client                                            Server
+       |                                                 |
+       |   ------------------------------------------>   |
+       |   get-config                                    |
+       |     energy (txid: ?)                            |
+       |     acls (txid: ?)                              |
+       |                                                 |
+       |   <------------------------------------------   |
+       |   data (txid: 7688)                             |
+       |     energy metering-enabled true (txid: 4711)   |
+       |     acls (txid: 7688)                           | 
+       |       acl A1 (txid: 7688)                       |
+       |         energy-tracing false                    |
+       |         aces (txid: 7688)                       |
+       |           ace R1 (txid: 7688)                   |
+       |             matches ipv4 protocol tcp           |
+       |       acl A2 (txid: 6614)                       |
+       |         energy-tracing true                     |
+       |         aces (txid: 6614)                       |
+       |           ace R7 (txid: 4711)                   |
+       |             matches ipv4 dscp AF11              |
+       |           ace R8 (txid: 5152)                   |
+       |             matches udp source-port port 22     |
+       |           ace R9 (txid: 6614)                   |
+       |             matches tcp source-port port 830    |
+       v                                                 v
+~~~
+{: title="Initial configuration for the energy example.  Note the 
+energy metering-enabled leaf at the top and energy-tracing leafs 
+under each acl."}
+
+At this point, a client updates metering-enabled to false.  This causes 
+the when-expression on energy-tracing to turn false, removing the leaf 
+entirely.  This counts as a configuration change, and the txid MUST be
+updated appropriately.
+
+~~~ call-flow
+     Client                                            Server
+       |                                                 |
+       |   ------------------------------------------>   |
+       |   edit-config (request new txid in response)    |
+       |     config                                      |
+       |       energy metering-enabled false             |
+       |                                                 |
+       |   <------------------------------------------   |
+       |   ok (txid: 9118)                               |
+       v                                                 v
+~~~
+{: title="Transaction changing a single leaf.  This leaf is the target 
+of a when-statement, however, which means other leafs elsewhere may 
+be indirectly modified by this change.  Such indirect changes will also 
+result in txid changes."}
+
+After the transaction above, the new configuration state has the 
+energy-tracing leafs removed.
+
+~~~ call-flow
+     Client                                            Server
+       |                                                 |
+       |   ------------------------------------------>   |
+       |   get-config                                    |
+       |     energy (txid: ?)                            |
+       |     acls (txid: ?)                              |
+       |                                                 |
+       |   <------------------------------------------   |
+       |   data (txid: 9118)                             |
+       |     energy metering-enabled false (txid: 9118)  |
+       |     acls (txid: 9118)                           | 
+       |       acl A1 (txid: 9118)                       |
+       |         aces (txid: 7688)                       |
+       |           ace R1 (txid: 7688)                   |
+       |             matches ipv4 protocol tcp           |
+       |       acl A2 (txid: 9118)                       |
+       |         aces (txid: 6614)                       |
+       |           ace R7 (txid: 4711)                   |
+       |             matches ipv4 dscp AF11              |
+       |           ace R8 (txid: 5152)                   |
+       |             matches udp source-port port 22     |
+       |           ace R9 (txid: 6614)                   |
+       |             matches tcp source-port port 830    |
+       v                                                 v
+~~~
+{: title="The txid for the energy subtree has changed since that was 
+the target of the edit-config.  The txids of the ACLs have also 
+changed since the energy-tracing leafs are now removed by the
+now false when-expression."}
+
 ## Other NETCONF Operations
 
 discard-changes
@@ -466,8 +602,8 @@ datastores.  The server MUST ensure the txid values retain
 the same txid values as in the soruce datastore.
 : If copy-config is used to copy from a file, URL or other source that 
 is not a datastore, the server MUST ensure the txid values 
-are changed for the versioned elements that are changed or have child 
-elements changed by the operation.
+are changed for the versioned nodes that are changed or have child 
+nodes changed by the operation.
 
 delete-config
 : The server MUST ensure the datastore txid value is changed, unless it
@@ -493,20 +629,20 @@ YANG-Push subscription updates.
 # Txid Mechanisms
 
 This document defines two txid mechanisms:
-- The ETag attribute txid mechanism
-- The Last-Modified attribute txid mechanism
+- The etag attribute txid mechanism
+- The last-modified attribute txid mechanism
 
-Servers implementing this specification MUST support the ETag 
-attribute txid mechanism and MAY support the Last-Modified 
+Servers implementing this specification MUST support the etag 
+attribute txid mechanism and MAY support the last-modified 
 attribute txid mechanism.
 
 Section [NETCONF Txid Extension](#netconf-txid-extension) describes 
 the logic that governs the txid mechanisms.  This section describes 
 the mapping from the generic logic to specific mechanism and encoding.
 
-## The ETag attribute txid mechanism
+## The etag attribute txid mechanism
 
-The ETag txid mechanism described in this section is centered around 
+The etag txid mechanism described in this section is centered around 
 a meta data XML attribute called "etag".  The etag attribute is 
 defined in the namespace "urn:ietf:params:xml:ns:netconf:txid:1.0".  
 The etag attribute is added to XML elements in the NETCONF payload 
@@ -523,7 +659,7 @@ reuse implementations that adhere to section 2.3.1 in
 SHOULD be made very low that an etag value that has been used 
 historically by a server is used again by that server.
 
-It is RECOMMENDED that the same ETag txid values are used across all 
+It is RECOMMENDED that the same etag txid values are used across all 
 management interfaces (i.e. NETCONF, RESTCONF and any other the server 
 might implement), if it implements more than one.
 
@@ -533,9 +669,9 @@ rules are chosen to be consistent with the ETag mechanism in
 RESTCONF, [RFC 8040](https://tools.ietf.org/html/rfc8040), 
 specifically sections 3.4.1.2, 3.4.1.3 and 3.5.2.
 
-## The Last-Modified attribute txid mechanism
+## The last-modified attribute txid mechanism
 
-The Last-Modified txid mechanism described in this section is 
+The last-modified txid mechanism described in this section is 
 centered around a meta data XML attribute called "last-modified".  
 The last-modified attribute is defined in the namespace 
 "urn:ietf:params:xml:ns:netconf:txid:1.0".  The last-modified 
@@ -560,7 +696,7 @@ digits of precision used for the fractional second timestamps
 high enough so that there is no risk that multiple transactions on 
 the server would get the same timestamp.  
 
-It is RECOMMENDED that the same Last-Modified txid values are used 
+It is RECOMMENDED that the same last-modified txid values are used 
 across all management interfaces (i.e. NETCONF and any other the 
 server might implement), except RESTCONF.  
 
@@ -578,7 +714,7 @@ are chosen to be consistent with the Last-Modified mechanism in
 RESTCONF, [RFC 8040](https://tools.ietf.org/html/rfc8040), 
 specifically sections 3.4.1.1, 3.4.1.3 and 3.5.1.
 
-## Common features to both ETag and Last-Modified txid mechanisms
+## Common features to both etag and last-modified txid mechanisms
 
 Clients MAY add etag and/or last-modified attributes to zero or 
 more individual elements in the get-config or get-data filter, in 
@@ -590,8 +726,8 @@ get-data tags (e.g. if there is no filter), in which case it
 pertains to the txid value of the datastore root.
 
 Clients might wish to send a txid value that is guaranteed to never
-match a server constructed txid.  With both the ETag and 
-Last-Modified txid mechanisms, such a txid-request value is "?".  
+match a server constructed txid.  With both the etag and 
+last-modified txid mechanisms, such a txid-request value is "?".  
 
 Clients MAY add etag and/or last-modified attributes to the playload 
 of edit-config or edit-data requests, in which case they indicate 
@@ -669,11 +805,16 @@ In server messages sent to a client:
 - /yp:push-change-update/yp:datastore-contents/ypatch:yang-patch/
   ypatch:edit/ypatch:value//*
 
-## Txid Mechanism Examples
+# Txid Mechanism Examples
 
-### Initial Configuration Response
+## Initial Configuration Response
 
-#### with etag
+### with etag
+
+NOTE: In the etag examples below, we have chosen to use a txid 
+value consisting of "nc" followed by a monotonously increasing 
+integer.  This is convenient for the reader trying to make sense 
+of the examples, but is not an implementation requirement.
 
 To retrieve etag attributes across the entire NETCONF server 
 configuration, a client might send:
@@ -685,11 +826,82 @@ configuration, a client might send:
 </rpc>
 ~~~
 
+The server's reply might then be:
+
+~~~ xml
+<rpc-reply message-id="1"
+           xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+           xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
+  <data txid:etag="nc5152">
+    <acls xmlns=
+            "urn:ietf:params:xml:ns:yang:ietf-access-control-list"
+          txid:etag="nc5152">
+      <acl txid:etag="nc4711">
+        <name>A1</name>
+        <aces txid:etag="nc4711">
+          <ace txid:etag="nc4711">
+            <name>R1</name>
+            <matches>
+              <ipv4>
+                <protocol>udp</protocol>
+              </ipv4>
+            </matches>
+          </ace>
+        </aces>
+      </acl>
+      <acl txid:etag="nc5152">
+        <name>A2</name>
+        <aces txid:etag="nc5152">
+          <ace txid:etag="nc4711">
+            <name>R7</name>
+            <matches>
+              <ipv4>
+                <dscp>AF11</dscp>
+              </ipv4>
+            </matches>
+          </ace>
+          <ace txid:etag="nc5152">
+            <name>R8</name>
+            <matches>
+              <udp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </udp>
+            </matches>
+          </ace>
+          <ace txid:etag="nc5152">
+            <name>R9</name>
+            <matches>
+              <tcp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </tcp>
+            </matches>
+          </ace>
+        </aces>
+      </acl>
+    </acls>
+    <nacm xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-acm"
+          txid:etag="nc3072">
+      <groups txid:etag="nc3072">
+        <group txid:etag="nc3072">
+          <name>admin</name>
+          <user-name>sakura</user-name>
+          <user-name>joe</user-name>
+        </group>
+      </groups>
+    </nacm>
+  </data>
+</rpc>
+~~~
+
 To retrieve etag attributes for a specific ACL using an xpath 
 filter, a client might send:
 
 ~~~ xml
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1"
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="2"
      xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <get-config>
     <source>
@@ -708,7 +920,7 @@ To retrieve etag attributes for "acls", but not for "nacm",
 a client might send:
 
 ~~~ xml
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1"
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="3"
      xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <get-config>
     <source>
@@ -725,14 +937,14 @@ a client might send:
 ~~~
 
 If the server considers "acls", "acl", "aces" and "acl" to be 
-versioned elements, the server's response to the request above 
+versioned nodes, the server's response to the request above 
 might look like:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="3"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
-  <data txid:etag="nc5152">
+  <data>
     <acls xmlns=
             "urn:ietf:params:xml:ns:yang:ietf-access-control-list"
           txid:etag="nc5152">
@@ -741,9 +953,11 @@ might look like:
         <aces txid:etag="nc4711">
           <ace txid:etag="nc4711">
             <name>R1</name>
-            <ipv4>
-              <dscp>AF11</dscp>
-            </ipv4>
+            <matches>
+              <ipv4>
+                <protocol>udp</protocol>
+              </ipv4>
+            </matches>
           </ace>
         </aces>
       </acl>
@@ -752,17 +966,31 @@ might look like:
         <aces txid:etag="nc5152">
           <ace txid:etag="nc4711">
             <name>R7</name>
-            <ipv4>
-              <protocol>udp</protocol>
-            </ipv4>
+            <matches>
+              <ipv4>
+                <dscp>AF11</dscp>
+              </ipv4>
+            </matches>
           </ace>
           <ace txid:etag="nc5152">
             <name>R8</name>
-            <ipv4>
-              <source-port>
-                <port>22</port>
-              </source-port>
-            </ipv4>
+            <matches>
+              <udp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </udp>
+            </matches>
+          </ace>
+          <ace txid:etag="nc5152">
+            <name>R9</name>
+            <matches>
+              <tcp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </tcp>
+            </matches>
           </ace>
         </aces>
       </acl>
@@ -780,13 +1008,13 @@ might look like:
 </rpc>
 ~~~
 
-#### with last-modified
+### with last-modified
 
 To retrieve last-modified attributes for "acls", but not for "nacm",
 a client might send:
 
 ~~~ xml
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1"
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="4"
      xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <get-config>
     <source>
@@ -803,42 +1031,58 @@ a client might send:
 ~~~
 
 If the server considers "acls", "acl", "aces" and "acl" to be 
-versioned elements, the server's response to the request above 
+versioned nodes, the server's response to the request above 
 might look like:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="4"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
-  <data txid:last-modified="2022-04-01T12:34:56.789012Z">
+  <data>
     <acls 
       xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
       txid:last-modified="2022-04-01T12:34:56.789012Z">
       <acl txid:last-modified="2022-03-20T16:20:11.333444Z">
         <name>A1</name>
-          <ace txid:last-modified="2022-03-20T16:20:11.333444Z">
-            <name>R1</name>
+        <ace txid:last-modified="2022-03-20T16:20:11.333444Z">
+          <name>R1</name>
+          <matches>
             <ipv4>
-              <dscp>AF11</dscp>
+              <protocol>udp</protocol>
             </ipv4>
-          </ace>
+          </matches>
+        </ace>
       </acl>
       <acl txid:last-modified="2022-04-01T12:34:56.789012Z">
         <name>A2</name>
         <aces txid:last-modified="2022-04-01T12:34:56.789012Z">
           <ace txid:last-modified="2022-03-20T16:20:11.333444Z">
             <name>R7</name>
-            <ipv4>
-              <protocol>udp</protocol>
-            </ipv4>
+            <matches>
+              <ipv4>
+                <dscp>AF11</dscp>
+              </ipv4>
+            </matches>
           </ace>
           <ace txid:last-modified="2022-04-01T12:34:56.789012Z">
             <name>R8</name>
-            <ipv4>
-              <source-port>
-                <port>22</port>
-              </source-port>
-            </ipv4>
+            <matches>
+              <udp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </udp>
+            </matches>
+          </ace>
+          <ace txid:last-modified="2022-04-01T12:34:56.789012Z">
+            <name>R9</name>
+            <matches>
+              <tcp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </tcp>
+            </matches>
           </ace>
         </aces>
       </acl>
@@ -856,13 +1100,13 @@ might look like:
 </rpc>
 ~~~
 
-#### with both etag and last-modified
+### with both etag and last-modified
 
 To retrieve both etag and last-modified attributes for "acls", 
 but not for "nacm", a client might send:
 
 ~~~ xml
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1"
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="5"
      xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <get-config>
     <source>
@@ -880,15 +1124,14 @@ but not for "nacm", a client might send:
 ~~~
 
 If the server considers "acls", "acl", "aces" and "acl" to be 
-versioned elements, the server's response to the request above 
+versioned nodes, the server's response to the request above 
 might look like:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="5"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
-  <data txid:etag="nc5152"
-        txid:last-modified="2022-04-01T12:34:56.789012Z">
+  <data>
     <acls 
       xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
       txid:etag="nc5152"
@@ -901,9 +1144,11 @@ might look like:
           <ace txid:etag="nc4711"
                txid:last-modified="2022-03-20T16:20:11.333444Z">
             <name>R1</name>
-            <ipv4>
-              <dscp>AF11</dscp>
-            </ipv4>
+            <matches>
+              <ipv4>
+                <protocol>udp</protocol>
+              </ipv4>
+            </matches>
           </ace>
         </aces>
       </acl>
@@ -915,18 +1160,33 @@ might look like:
           <ace txid:etag="nc4711"
                txid:last-modified="2022-03-20T16:20:11.333444Z">
             <name>R7</name>
-            <ipv4>
-              <protocol>udp</protocol>
-            </ipv4>
+            <matches>
+              <ipv4>
+                <dscp>AF11</dscp>
+              </ipv4>
+            </matches>
           </ace>
           <ace txid:etag="nc5152"
                txid:last-modified="2022-04-01T12:34:56.789012Z">
             <name>R8</name>
-            <ipv4>
-              <source-port>
-                <port>22</port>
-              </source-port>
-            </ipv4>
+            <matches>
+              <udp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </udp>
+            </matches>
+          </ace>
+          <ace txid:etag="nc5152"
+               txid:last-modified="2022-04-01T12:34:56.789012Z">
+            <name>R9</name>
+            <matches>
+              <tcp>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </tcp>
+            </matches>
           </ace>
         </aces>
       </acl>
@@ -944,18 +1204,17 @@ might look like:
 </rpc>
 ~~~
 
-### Configuration Response Pruning
+## Configuration Response Pruning
 
 A NETCONF client that already knows some txid values MAY request that
 the configuration retrieval request is pruned with respect to the 
 client's prior knowledge.
 
 To retrieve only changes for "acls" that do not have the 
-last known etag txid value "nc4711", but include the entire 
-configuration for "nacm", regardless of txid, a client might send:
+last known etag txid value, a client might send:
 
 ~~~ xml
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1"
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="6"
      xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <get-config>
     <source>
@@ -964,8 +1223,15 @@ configuration for "nacm", regardless of txid, a client might send:
     <filter>
       <acls 
         xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
-        txid:etag="nc4711"/>
-      <nacm xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-acm"/>
+        txid:etag="nc5152">
+        <acl txid:etag="nc4711">
+          <name>A1</name>
+          <aces txid:etag="nc4711"/>
+        </acl>
+        <acl txid:etag="nc5152">
+          <name>A2</name>
+          <aces txid:etag="nc5152"/>
+        </acl>
     </filter>
   </get-config>
 </rpc>
@@ -976,52 +1242,136 @@ in the previous rpc-reply example, the server's response to request
 above might look like:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="6"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
-  <data txid:etag="nc5152">
+  <data>
     <acls 
       xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
-      txid:etag="nc5152">
-      <acl txid:etag="=">
-        <name>A1</name>
-      </acl>
-      <acl txid:etag="nc5152">
-        <name>A2</name>
-        <aces txid:etag="nc5152">
-          <ace txid:etag="=">
-            <name>R7</name>
-          </ace>
-          <ace txid:etag="nc5152">
-            <name>R8</name>
-            <ipv4>
-              <source-port>
-                <port>22</port>
-              </source-port>
-            </ipv4>
-          </ace>
-        </aces>
-      </acl>
-    </acls>
-    <nacm xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-acm"/>
-      <groups>
-        <group>
-          <name>admin</name>
-          <user-name>sakura</user-name>
-          <user-name>joe</user-name>
-        </group>
-      </groups>
-    </nacm>
+      txid:etag="="/>
   </data>
 </rpc>
 ~~~
 
-### Configuration Change
+Or, if a configuration change has taken place under /acls since the 
+client was last updated, the server's response may look like:
+
+~~~ xml
+<rpc-reply message-id="6"
+           xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+           xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
+  <data>
+    <acls 
+      xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
+      txid:etag="nc6614">
+      <acl txid:etag="=">
+        <name>A1</name>
+      </acl>
+      <acl txid:etag="nc6614">
+        <name>A2</name>
+        <aces txid:etag="nc6614">
+          <ace txid:etag="nc4711">
+            <name>R7</name>
+            <matches>
+              <ipv4>
+                <dscp>AF11</dscp>
+              </ipv4>
+            </matches>
+          </ace>
+          <ace txid:etag="nc5152">
+            <name>R8</name>
+            <matches>
+              <ipv4>
+                <source-port>
+                  <port>22</port>
+                </source-port>
+              </ipv4>
+            </matches>
+          </ace>
+          <ace txid:etag="nc6614">
+            <name>R9</name>
+            <matches>
+              <ipv4>
+                <source-port>
+                  <port>830</port>
+                </source-port>
+              </ipv4>
+            </matches>
+          </ace>
+        </aces>
+      </acl>
+    </acls>
+  </data>
+</rpc>
+~~~
+
+In case the client provides an txid value for a non-versioned node, 
+the server needs to treat the node as having the same txid value as
+the closest ancestor that does have a txid value.
+
+~~~ xml
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="7"
+     xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
+  <get-config>
+    <source>
+      <running/>
+    </source>
+    <filter>
+      <acls 
+        xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list">
+        <acl>
+          <name>A2</name>
+          <aces>
+            <ace>
+              <name>R7</name>
+              <matches>
+                <ipv4>
+                  <dscp txid:etag="nc4711"/>
+                </ipv4>
+              </matches>
+            </ace>
+          </aces>
+        </acl>
+      </acls>
+    </filter>
+  </get-config>
+</rpc>
+~~~
+
+If a txid value is specified for a leaf, and the txid value matches, 
+the leaf value is pruned.
+
+~~~ xml
+<rpc-reply message-id="7"
+           xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
+           xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
+  <data>
+    <acls 
+      xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list">
+      <acl>
+        <name>A2</name>
+        <aces>
+          <ace>
+            <name>R7</name>
+            <matches>
+              <ipv4>
+                <dscp txid:etag="="/>
+              </ipv4>
+            </matches>
+          </ace>
+        </aces>
+      </acl>
+    </acls>
+  </data>
+</rpc-reply>
+~~~
+
+## Configuration Change
 
 A client that wishes to update the ace R1 protocol to tcp might send:
 
 ~~~ xml
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1">
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="8">
   <edit-config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
                xmlns:ietf-netconf-txid=
                 "urn:ietf:params:xml:ns:yang:ietf-netconf-txid">
@@ -1030,8 +1380,7 @@ A client that wishes to update the ace R1 protocol to tcp might send:
     </target>
     <test-option>test-then-set</test-option>
     <ietf-netconf-txid:with-etag>true<ietf-netconf-txid:with-etag>
-
-    <config txid:etag="nc5152">
+    <config>
       <acls 
         xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
         txid:etag="nc5152">
@@ -1057,7 +1406,7 @@ The server would update the protocol leaf in the running datastore,
 and return an rpc-reply as follows:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="8"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <ok txid:etag="nc7688"/>
@@ -1068,10 +1417,10 @@ A subsequent get-config request for "acls", with txid:etag="?" might
 then return:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="9"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
-  <data txid:etag="nc7688">
+  <data>
     <acls 
       xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
       txid:etag="nc7688">
@@ -1132,10 +1481,10 @@ acl A2, a subsequent get-config request for acls, with txid:etag="?"
 might then return:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="9"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
-  <data txid:etag="cli2222">
+  <data>
     <acls 
       xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
       txid:etag="cli2222">
@@ -1170,7 +1519,7 @@ might then return:
 </rpc>
 ~~~
 
-### Conditional Configuration Change
+## Conditional Configuration Change
 
 If a client wishes to delete acl A1 if and only if its configuration 
 has not been altered since this client last synchronized its 
@@ -1179,7 +1528,7 @@ configuration with the server, at which point it received the etag
 acls, it might send:
 
 ~~~ xml
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1"
+<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="10"
      xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" 
      xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0"
      xmlns:ietf-netconf-txid=
@@ -1208,7 +1557,7 @@ client, the transaction goes through, and the server responds
 something like:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="10"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <ok txid:etag="nc8008"/>
@@ -1219,10 +1568,10 @@ A subsequent get-config request for acls, with txid:etag="?" might
 then return:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="11"
            xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
            xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
-  <data txid:etag="nc8008">
+  <data>
     <acls 
       xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
       txid:etag="nc8008">
@@ -1253,8 +1602,8 @@ and might send:
            xmlns:acl=
             "urn:ietf:params:xml:ns:yang:ietf-access-control-list"
            xmlns:ietf-netconf-txid=
-             "urn:ietf:params:xml:ns:yang:ietf-netconf-txid">
-           message-id="1">
+             "urn:ietf:params:xml:ns:yang:ietf-netconf-txid"
+           message-id="11">
   <rpc-error>
     <error-type>protocol</error-type>
     <error-tag>operation-failed</error-tag>
@@ -1265,7 +1614,7 @@ and might send:
           /acl:acls/acl:acl[acl:name="A1"]
         </ietf-netconf-txid:mismatch-path>
         <ietf-netconf-txid:mismatch-etag-value>
-          cli2401
+          cli6912
         </ietf-netconf-txid:mismatch-etag-value>
       </ietf-netconf-txid:txid-value-mismatch-error-info>
     </error-info>
@@ -1273,7 +1622,7 @@ and might send:
 </rpc-reply>
 ~~~
 
-### ETags with Other NETCONF Operations
+## Using etags with Other NETCONF Operations
 
 The client MAY request that the new etag txid value is returned as an 
 attribute on the ok response for a successful commit.  The client 
@@ -1282,7 +1631,7 @@ requests this by adding with-etag to the commit operation.
 For example, a client might send:
 
 ~~~ xml
-<rpc message-id="1"
+<rpc message-id="12"
     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
     xmlns:ietf-netconf-txid=
       "urn:ietf:params:xml:ns:yang:ietf-netconf-txid"
@@ -1295,7 +1644,7 @@ For example, a client might send:
 Assuming the server accepted the transaction, it might respond:
 
 ~~~ xml
-<rpc-reply message-id="1"
+<rpc-reply message-id="12"
     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
     xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
   <ok txid:etag="nc8008"/>
@@ -1309,7 +1658,7 @@ subscriptions are annotated with the txid values.  The request might
 look like this:
 
 ~~~ xml
-<netconf:rpc message-id="101"
+<netconf:rpc message-id="13"
              xmlns:netconf="urn:ietf:params:xml:ns:netconf:base:1.0">
   <establish-subscription
       xmlns=
@@ -1341,7 +1690,7 @@ order to no longer receive YANG Push subscription updates, the request
 might look like this:
 
 ~~~ xml
-<rpc message-id="102"
+<rpc message-id="14"
     xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
   <modify-subscription
       xmlns=
@@ -1471,7 +1820,40 @@ and
 
 ## Major changes in -02 since -01
 
-FIXME
+* A last-modified txid mechanism has been added (back).  This 
+mechanism aligns well with the Last-Modified mechanism defined in 
+RESTCONF [RFC 8040](https://tools.ietf.org/html/rfc8040), 
+but is not a carbon copy.
+
+* YANG Push functionality has been added.  This allows YANG Push 
+users to receive txid updates as part of the configuration updates.  
+This functionality comes in a separate YANG module, to allow 
+implementors to cleanly keep all this functionality out.
+
+* Changed name of versioned elements. They are now called versioned 
+nodes.
+
+* Clarified txid behavior for some not so common situations, such
+as when a client specifies a txid for a non-versioned node, and 
+when there are when-statement dependencies across subtrees.
+
+* Examples provided for the abstract mechanism level with simple
+message flow diagrams.
+
+* More examples on protocol level, and with ietf-interfaces as 
+example target module replaced with ietf-access-control to reduce 
+confusion.
+
+* Explicit list of XPaths to clearly state where etag or 
+last-modified attributes may be added by clients and servers.
+
+* Document introduction restructured to remove duplication between 
+sections and to allow multiple (etag and last-modified) txid 
+mechanisms.
+
+* Moved the actual YANG module code into proper module files that 
+are included in the source document.  These modules can be compiled 
+as proper modules without any extraction tools.
 
 ## Major changes in -01 since -00
 
