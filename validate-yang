@@ -1,2 +1,2 @@
-awk '/module ietf-netconf-transaction-id/,/~~~/ {if($0 != "~~~")print}' draft-lindblad-netconf-transaction-id.md > ietf-netconf-transaction-id.yang
-pyang --ietf --strict --canonical --path=./RFC/ ietf-netconf-transaction-id.yang 
+pyang --ietf --strict --canonical --path=./RFC/ yang/ietf-netconf-txid.yang
+pyang --ietf --strict --canonical --path=./RFC/:yang/ yang/ietf-netconf-txid-yang-push.yang
