@@ -4,12 +4,12 @@
 
 NETCONF                                                      J. Lindblad
 Internet-Draft                                             Cisco Systems
-Intended status: Standards Track                             7 June 2022
-Expires: 9 December 2022
+Intended status: Standards Track                             8 June 2022
+Expires: 10 December 2022
 
 
                   Transaction ID Mechanism for NETCONF
-                   draft-lindblad-netconf-etag-latest
+              draft-lindblad-netconf-transaction-id-latest
 
 Abstract
 
@@ -47,16 +47,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 9 December 2022.
-
-
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 1]
-
-Internet-Draft                    NCTID                        June 2022
-
+   This Internet-Draft will expire on 10 December 2022.
 
 Copyright Notice
 
@@ -68,57 +59,49 @@ Copyright Notice
    license-info) in effect on the date of publication of this document.
    Please review these documents carefully, as they describe your rights
    and restrictions with respect to this document.  Code Components
-   extracted from this document must include Simplified BSD License text
-   as described in Section 4.e of the Trust Legal Provisions and are
-   provided without warranty as described in the Simplified BSD License.
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
 
 Table of Contents
 
-   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
-   2.  Conventions and Definitions . . . . . . . . . . . . . . . . .   4
-   3.  NETCONF Txid Extension  . . . . . . . . . . . . . . . . . . .   4
-     3.1.  Use Cases . . . . . . . . . . . . . . . . . . . . . . . .   4
-     3.2.  General Txid Principles . . . . . . . . . . . . . . . . .   5
-     3.3.  Initial Configuration Retrieval . . . . . . . . . . . . .   6
-     3.4.  Subsequent Configuration Retrieval  . . . . . . . . . . .   7
-     3.5.  Conditional Transactions  . . . . . . . . . . . . . . . .   9
-       3.5.1.  Transactions toward the Candidate Datastore . . . . .  12
-     3.6.  Dependencies within Transactions  . . . . . . . . . . . .  13
-     3.7.  Other NETCONF Operations  . . . . . . . . . . . . . . . .  15
-     3.8.  YANG-Push Subscriptions . . . . . . . . . . . . . . . . .  16
-   4.  Txid Mechanisms . . . . . . . . . . . . . . . . . . . . . . .  16
-     4.1.  The etag attribute txid mechanism . . . . . . . . . . . .  17
-     4.2.  The last-modified attribute txid mechanism  . . . . . . .  17
+   1.  Introduction
+   2.  Conventions and Definitions
+   3.  NETCONF Txid Extension
+     3.1.  Use Cases
+     3.2.  General Txid Principles
+     3.3.  Initial Configuration Retrieval
+     3.4.  Subsequent Configuration Retrieval
+     3.5.  Conditional Transactions
+       3.5.1.  Transactions toward the Candidate Datastore
+     3.6.  Dependencies within Transactions
+     3.7.  Other NETCONF Operations
+     3.8.  YANG-Push Subscriptions
+   4.  Txid Mechanisms
+     4.1.  The etag attribute txid mechanism
+     4.2.  The last-modified attribute txid mechanism
      4.3.  Common features to both etag and last-modified txid
-           mechanisms  . . . . . . . . . . . . . . . . . . . . . . .  18
-   5.  Txid Mechanism Examples . . . . . . . . . . . . . . . . . . .  20
-     5.1.  Initial Configuration Response  . . . . . . . . . . . . .  20
-       5.1.1.  With etag . . . . . . . . . . . . . . . . . . . . . .  20
-       5.1.2.  With last-modified  . . . . . . . . . . . . . . . . .  24
-     5.2.  Configuration Response Pruning  . . . . . . . . . . . . .  26
-     5.3.  Configuration Change  . . . . . . . . . . . . . . . . . .  30
-     5.4.  Conditional Configuration Change  . . . . . . . . . . . .  34
-     5.5.  Using etags with Other NETCONF Operations . . . . . . . .  36
-     5.6.  YANG-Push . . . . . . . . . . . . . . . . . . . . . . . .  37
-   6.  YANG Modules  . . . . . . . . . . . . . . . . . . . . . . . .  39
-     6.1.  Base module for txid in NETCONF . . . . . . . . . . . . .  39
-     6.2.  Additional support for txid in YANG-Push  . . . . . . . .  42
-   7.  Security Considerations . . . . . . . . . . . . . . . . . . .  44
-   8.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  44
-   9.  Changes . . . . . . . . . . . . . . . . . . . . . . . . . . .  45
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 2]
-
-Internet-Draft                    NCTID                        June 2022
-
-
-     9.1.  Major changes in -02 since -01  . . . . . . . . . . . . .  45
-     9.2.  Major changes in -01 since -00  . . . . . . . . . . . . .  46
-   10. Normative References  . . . . . . . . . . . . . . . . . . . .  47
-   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  47
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  47
+           mechanisms
+   5.  Txid Mechanism Examples
+     5.1.  Initial Configuration Response
+       5.1.1.  With etag
+       5.1.2.  With last-modified
+     5.2.  Configuration Response Pruning
+     5.3.  Configuration Change
+     5.4.  Conditional Configuration Change
+     5.5.  Using etags with Other NETCONF Operations
+     5.6.  YANG-Push
+   6.  YANG Modules
+     6.1.  Base module for txid in NETCONF
+     6.2.  Additional support for txid in YANG-Push
+   7.  Security Considerations
+   8.  IANA Considerations
+   9.  Changes
+     9.1.  Major changes in -02 since -01
+     9.2.  Major changes in -01 since -00
+   10. Normative References
+   Acknowledgments
+   Author's Address
 
 1.  Introduction
 
@@ -159,16 +142,6 @@ Internet-Draft                    NCTID                        June 2022
    untouched by others.  This mechanism leverages RFC 7232
    (https://tools.ietf.org/html/rfc7232) "Hypertext Transfer Protocol
    (HTTP/1.1): Conditional Requests".
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 3]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    This document defines similar functionality for NETCONF, RFC 6241
    (https://tools.ietf.org/html/rfc6241), and ties this in with YANG-
@@ -216,19 +189,10 @@ Internet-Draft                    NCTID                        June 2022
 
    Initial configuration retrieval  When the client initially connects
       to a server, it may be interested to acquire a current view of
-      (parts of) the server's configuration.
-
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 4]
-
-Internet-Draft                    NCTID                        June 2022
-
-
-      In order to be able to efficiently detect changes later, it may
-      also be interested to store meta level txid information for
-      subtrees of the configuration.
+      (parts of) the server's configuration.  In order to be able to
+      efficiently detect changes later, it may also be interested to
+      store meta level txid information for subtrees of the
+      configuration.
 
    Subsequent configuration retrieval  When a client needs to reread
       (parts of) the server's configuration, it may be interested to
@@ -274,13 +238,6 @@ Internet-Draft                    NCTID                        June 2022
    means any update of a config true node will result in a new txid
    value for all ancestor versioned node, up to and including the
    datastore root itself.
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 5]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    This also means a server MUST update the txid value for any nodes
    that change as a result of a configuration change, regardless of
@@ -331,13 +288,6 @@ Internet-Draft                    NCTID                        June 2022
           |             matches tcp source-port port 22     |
           v                                                 v
 
-
-
-Lindblad                 Expires 9 December 2022                [Page 6]
-
-Internet-Draft                    NCTID                        June 2022
-
-
        Figure 1: Initial Configuration Retrieval.  The server returns
        the requested configuration, annotated with txid values.  The
       most recent change seems to have been an update to the R8 and R9
@@ -377,22 +327,12 @@ Internet-Draft                    NCTID                        June 2022
       matches the server's txid value.  In this case the server MUST
       return the node decorated with a special "txid-match" txid value
       (e.g. "=") to the matching node, pruning any value and child
-      nodes.
-
-      A server MUST NOT ever use the txid-match value (e.g. "=") as an
-      actual txid value.
+      nodes.  A server MUST NOT ever use the txid-match value (e.g. "=")
+      as an actual txid value.
 
    For list elements, pruning child nodes means that top-level key nodes
    MUST be included in the response, and other child nodes MUST NOT be
    included.  For containers, child nodes MUST NOT be included.
-
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 7]
-
-Internet-Draft                    NCTID                        June 2022
-
 
         Client                                            Server
           |                                                 |
@@ -439,17 +379,6 @@ Internet-Draft                    NCTID                        June 2022
        request with known txid values.  Server provides update where
                            changes have happened.
 
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 8]
-
-Internet-Draft                    NCTID                        June 2022
-
-
         Client                                            Server
           |                                                 |
           |   ------------------------------------------>   |
@@ -495,16 +424,6 @@ Internet-Draft                    NCTID                        June 2022
    for a potentially extended period of time, or risk that a change from
    another client disrupts the intent in the time window between a read
    (get-config etc.) and write (edit-config etc.) operation.
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022                [Page 9]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    Clients that are also interested to know the txid assigned to the
    modified versioned nodes in the model immediately in the response
@@ -554,14 +473,6 @@ Internet-Draft                    NCTID                        June 2022
           |             matches tcp source-port port 830    |
           v                                                 v
 
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 10]
-
-Internet-Draft                    NCTID                        June 2022
-
-
       Figure 6: For all leaf objects that were changed, and all their
       ancestors, the txids are updated to the value returned in the ok
                                   message.
@@ -605,18 +516,6 @@ Internet-Draft                    NCTID                        June 2022
         changed (out of band), the server rejects the configuration
       change request and reports an error with details about where the
                            mismatch was detected.
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 11]
-
-Internet-Draft                    NCTID                        June 2022
-
 
 3.5.1.  Transactions toward the Candidate Datastore
 
@@ -664,16 +563,6 @@ Internet-Draft                    NCTID                        June 2022
           client matched those on the server, the transaction was
                            successfully executed.
 
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 12]
-
-Internet-Draft                    NCTID                        June 2022
-
-
 3.6.  Dependencies within Transactions
 
    YANG modules that contain when-statements referencing remote parts of
@@ -705,30 +594,6 @@ Internet-Draft                    NCTID                        June 2022
    rule individually.
 
    In this example, we have an initial configuration like this:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 13]
-
-Internet-Draft                    NCTID                        June 2022
-
 
         Client                                            Server
           |                                                 |
@@ -777,15 +642,6 @@ Internet-Draft                    NCTID                        June 2022
           |   ok (txid: 9118)                               |
           v                                                 v
 
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 14]
-
-Internet-Draft                    NCTID                        June 2022
-
-
       Figure 10: Transaction changing a single leaf.  This leaf is the
         target of a when-statement, however, which means other leafs
          elsewhere may be indirectly modified by this change.  Such
@@ -833,15 +689,6 @@ Internet-Draft                    NCTID                        June 2022
       runs.
 
    copy-config  The copy-config operation can be used to copy contents
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 15]
-
-Internet-Draft                    NCTID                        June 2022
-
-
       between datastores.  The server MUST ensure the txid values retain
       the same txid values as in the soruce datastore.
 
@@ -888,15 +735,6 @@ Internet-Draft                    NCTID                        June 2022
    If a client uses more than one txid mechanism, such as both etag and
    last-modified in a particular message to a server, or patricular
    commit, the result is undefined.
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 16]
-
-Internet-Draft                    NCTID                        June 2022
-
 
 4.1.  The etag attribute txid mechanism
 
@@ -946,14 +784,6 @@ Internet-Draft                    NCTID                        June 2022
    defined in ietf-yang-types.yang, RFC 6991
    (https://datatracker.ietf.org/doc/html/rfc6991).
 
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 17]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    "2022-04-01T12:34:56.123456Z" is an example of what this time stamp
    format looks like.  It is RECOMMENDED that the time stamps provided
    by the server to closely match the real world clock.  Servers MUST
@@ -1002,14 +832,6 @@ Internet-Draft                    NCTID                        June 2022
    edit-config or edit-data requests, in which case they indicate the
    client's txid value of that element.
 
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 18]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    Clients MAY request servers that also implement YANG-Push to return
    configuration change subsription updates with etag or last-modified
    txid attributes.  The client requests this service by adding a with-
@@ -1057,14 +879,6 @@ Internet-Draft                    NCTID                        June 2022
    *  /nc:rpc/nc:edit-config/nc:config//*
 
    *  /nc:rpc/ncds:edit-data/ncds:config
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 19]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    *  /nc:rpc/ncds:edit-data/ncds:config//*
 
@@ -1115,13 +929,6 @@ Internet-Draft                    NCTID                        June 2022
 
    The server's reply might then be:
 
-
-
-Lindblad                 Expires 9 December 2022               [Page 20]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    <rpc-reply message-id="1"
               xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
               xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
@@ -1170,14 +977,6 @@ Internet-Draft                    NCTID                        June 2022
                    <source-port>
                      <port>22</port>
                    </source-port>
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 21]
-
-Internet-Draft                    NCTID                        June 2022
-
-
                  </tcp>
                </matches>
              </ace>
@@ -1216,23 +1015,6 @@ Internet-Draft                    NCTID                        June 2022
 
    To retrieve etag attributes for "acls", but not for "nacm", a client
    might send:
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 22]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="3"
         xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
@@ -1282,14 +1064,6 @@ Internet-Draft                    NCTID                        June 2022
                  <ipv4>
                    <dscp>AF11</dscp>
                  </ipv4>
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 23]
-
-Internet-Draft                    NCTID                        June 2022
-
-
                </matches>
              </ace>
              <ace txid:etag="nc5152">
@@ -1331,20 +1105,6 @@ Internet-Draft                    NCTID                        June 2022
 
    To retrieve last-modified attributes for "acls", but not for "nacm",
    a client might send:
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 24]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="4"
         xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
@@ -1394,14 +1154,6 @@ Internet-Draft                    NCTID                        June 2022
                  </ipv4>
                </matches>
              </ace>
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 25]
-
-Internet-Draft                    NCTID                        June 2022
-
-
              <ace txid:last-modified="2022-04-01T12:34:56.789012Z">
                <name>R8</name>
                <matches>
@@ -1446,18 +1198,6 @@ Internet-Draft                    NCTID                        June 2022
    To retrieve only changes for "acls" that do not have the last known
    etag txid value, a client might send:
 
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 26]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="6"
         xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
      <get-config>
@@ -1496,23 +1236,6 @@ Internet-Draft                    NCTID                        June 2022
 
    Or, if a configuration change has taken place under /acls since the
    client was last updated, the server's response may look like:
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 27]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    <rpc-reply message-id="6"
               xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
@@ -1561,15 +1284,6 @@ Internet-Draft                    NCTID                        June 2022
      </data>
    </rpc>
 
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 28]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    In case the client provides a txid value for a non-versioned node,
    the server needs to treat the node as having the same txid value as
    the closest ancestor that does have a txid value.
@@ -1604,28 +1318,6 @@ Internet-Draft                    NCTID                        June 2022
    If a txid value is specified for a leaf, and the txid value matches,
    the leaf value is pruned.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 29]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    <rpc-reply message-id="7"
               xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
               xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
@@ -1652,35 +1344,6 @@ Internet-Draft                    NCTID                        June 2022
 5.3.  Configuration Change
 
    A client that wishes to update the ace R1 protocol to tcp might send:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 30]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    <rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="8">
      <edit-config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
@@ -1730,14 +1393,6 @@ Internet-Draft                    NCTID                        June 2022
      <data>
        <acls
          xmlns="urn:ietf:params:xml:ns:yang:ietf-access-control-list"
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 31]
-
-Internet-Draft                    NCTID                        June 2022
-
-
          txid:etag="nc7688">
          <acl txid:etag="nc7688">
            <name>A1</name>
@@ -1786,14 +1441,6 @@ Internet-Draft                    NCTID                        June 2022
            </aces>
          </acl>
        </acls>
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 32]
-
-Internet-Draft                    NCTID                        June 2022
-
-
      </data>
    </rpc>
 
@@ -1839,17 +1486,6 @@ Internet-Draft                    NCTID                        June 2022
      </data>
    </rpc>
 
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 33]
-
-Internet-Draft                    NCTID                        June 2022
-
-
 5.4.  Conditional Configuration Change
 
    If a client wishes to delete acl A1 if and only if its configuration
@@ -1894,18 +1530,6 @@ Internet-Draft                    NCTID                        June 2022
    A subsequent get-config request for acls, with txid:etag="?" might
    then return:
 
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 34]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    <rpc-reply message-id="11"
               xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
               xmlns:txid="urn:ietf:params:xml:ns:netconf:txid:1.0">
@@ -1933,34 +1557,6 @@ Internet-Draft                    NCTID                        June 2022
    In case acl A1 did not have the expected etag txid value "nc7688",
    when the server processed this request, it rejects the transaction,
    and might send:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 35]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    <rpc-reply xmlns="urn:ietf:params:xml:ns:netconf:base:1.0"
               xmlns:acl=
@@ -2010,14 +1606,6 @@ Internet-Draft                    NCTID                        June 2022
      <ok txid:etag="nc8008"/>
    </rpc-reply>
 
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 36]
-
-Internet-Draft                    NCTID                        June 2022
-
-
 5.6.  YANG-Push
 
    A client MAY request that the updates for one or more YANG Push
@@ -2053,26 +1641,6 @@ Internet-Draft                    NCTID                        June 2022
    In case a client wishes to modify a previous subscription request in
    order to no longer receive YANG Push subscription updates, the
    request might look like this:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 37]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    <rpc message-id="14"
        xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
@@ -2123,13 +1691,6 @@ Internet-Draft                    NCTID                        June 2022
      </push-change-update>
    </notification>
 
-
-
-Lindblad                 Expires 9 December 2022               [Page 38]
-
-Internet-Draft                    NCTID                        June 2022
-
-
 6.  YANG Modules
 
 6.1.  Base module for txid in NETCONF
@@ -2179,13 +1740,6 @@ Internet-Draft                    NCTID                        June 2022
         Relating to IETF Documents
         (https://trustee.ietf.org/license-info).
 
-
-
-Lindblad                 Expires 9 December 2022               [Page 39]
-
-Internet-Draft                    NCTID                        June 2022
-
-
         This version of this YANG module is part of RFC XXXX
         (https://www.rfc-editor.org/info/rfcXXXX); see the RFC itself
         for full legal notices.
@@ -2234,14 +1788,6 @@ Internet-Draft                    NCTID                        June 2022
            enum = {
              description "Txid value used by servers to indicate
                that contents has been pruned due to txid match
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 40]
-
-Internet-Draft                    NCTID                        June 2022
-
-
                between client and server.";
            }
          }
@@ -2290,14 +1836,6 @@ Internet-Draft                    NCTID                        June 2022
        description
          "Injects the txid mechanisms into the
          edit-data operation";
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 41]
-
-Internet-Draft                    NCTID                        June 2022
-
-
      }
 
      sx:structure txid-value-mismatch-error-info {
@@ -2346,14 +1884,6 @@ Internet-Draft                    NCTID                        June 2022
      }
 
      import ietf-netconf-txid {
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 42]
-
-Internet-Draft                    NCTID                        June 2022
-
-
        prefix ietf-netconf-txid;
        reference
          "RFC XXXX: Xxxxxxxxx";
@@ -2402,14 +1932,6 @@ Internet-Draft                    NCTID                        June 2022
 
      augment "/sn:establish-subscription/sn:input" {
        description
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 43]
-
-Internet-Draft                    NCTID                        June 2022
-
-
          "This augmentation adds additional subscription parameters
            that apply specifically to datastore updates to RPC input.";
        uses ietf-netconf-txid:txid-grouping;
@@ -2457,15 +1979,6 @@ Internet-Draft                    NCTID                        June 2022
    This document registers two module names in the 'YANG Module Names'
    registry, defined in RFC 6020 (https://tools.ietf.org/html/rfc6020).
 
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 44]
-
-Internet-Draft                    NCTID                        June 2022
-
-
      name: ietf-netconf-txid
 
      prefix: ietf-netconf-txid
@@ -2495,10 +2008,8 @@ Internet-Draft                    NCTID                        June 2022
 
    *  YANG Push functionality has been added.  This allows YANG Push
       users to receive txid updates as part of the configuration
-      updates.
-
-      This functionality comes in a separate YANG module, to allow
-      implementors to cleanly keep all this functionality out.
+      updates.  This functionality comes in a separate YANG module, to
+      allow implementors to cleanly keep all this functionality out.
 
    *  Changed name of "versioned elements".  They are now called
       "versioned nodes".
@@ -2514,13 +2025,6 @@ Internet-Draft                    NCTID                        June 2022
    *  More examples on protocol level, and with ietf-interfaces as
       example target module replaced with ietf-access-control to reduce
       confusion.
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 45]
-
-Internet-Draft                    NCTID                        June 2022
-
 
    *  Explicit list of XPaths to clearly state where etag or last-
       modified attributes may be added by clients and servers.
@@ -2571,13 +2075,6 @@ Internet-Draft                    NCTID                        June 2022
 
    *  Added IANA Considerations section.
 
-
-
-Lindblad                 Expires 9 December 2022               [Page 46]
-
-Internet-Draft                    NCTID                        June 2022
-
-
    *  Removed all comments about open questions.
 
 10.  Normative References
@@ -2601,32 +2098,4 @@ Author's Address
 
    Jan Lindblad
    Cisco Systems
-
    Email: jlindbla@cisco.com
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lindblad                 Expires 9 December 2022               [Page 47]
